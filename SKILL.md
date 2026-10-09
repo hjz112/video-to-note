@@ -2,6 +2,7 @@
 name: video-to-note
 description: 把抖音、B站、YouTube、小红书的视频链接转成结构化的知识库笔记。当用户提供视频链接并要求解析、总结、整理笔记、提取文案、转写内容或归档素材时使用。流程为规范化链接、调用 video-downloader-enhanced 下载并转写、汇总产物信息，最后按笔记规范生成 summary.md。
 license: MIT
+agent_created: true
 compatibility: Requires yt-dlp, ffmpeg, whisper.cpp (WHISPER_CPP_BIN / WHISPER_CPP_MODEL env vars) and Python 3.10+. Best with a video-downloader-enhanced skill present.
 metadata:
   author: hjz112
