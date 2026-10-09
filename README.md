@@ -20,14 +20,24 @@
 
 ```
 video-to-note/
-├── SKILL.md                  # Skill 主文档：四步流程 + 长视频/批量扩展 + 8 条踩坑经验
+├── SKILL.md                  # Skill 主文档：四步流程（符合 Agent Skills 规范）
 ├── references/
-│   └── note-spec.md          # 笔记格式规范（与下载流程解耦，方便个人化调整）
+│   ├── note-spec.md          # 笔记格式规范（与下载流程解耦，方便个人化调整）
+│   └── long-video.md         # 长视频/多视频扩展流程 + 8 条踩坑经验（按需加载）
 ├── scripts/
 │   ├── resolve.py            # 链接规范化：分享文案抽链接 / 短链展开 / modal_id 提取
 │   └── collect.py            # 读取产物目录，输出写笔记所需全部信息的精简 JSON
 └── adapters/
     └── codex-prompt.md       # Codex CLI 适配：复制到 ~/.codex/prompts/ 即用
+```
+
+## ⚡ 一键安装（推荐）
+
+[skills.sh](https://skills.sh) 生态的通用安装器，一条命令装到任意支持的 Agent
+（Claude Code、Codex、Cursor、OpenCode、Copilot 等），安装时交互选择目标：
+
+```bash
+npx skills add hjz112/video-to-note
 ```
 
 ## 平台兼容性
@@ -169,7 +179,7 @@ Agent 会按 SKILL.md「扩展」一节执行：只下音轨 → 抽 16k wav →
 
 ---
 
-## 精华：踩坑经验（SKILL.md 「D. 必踩的坑」节）
+## 精华：踩坑经验（[references/long-video.md](references/long-video.md) 「D. 必踩的坑」节）
 
 多次实测换来的，比流程本身更值钱：
 
