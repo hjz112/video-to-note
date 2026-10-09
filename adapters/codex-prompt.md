@@ -5,12 +5,19 @@
 你现在要执行「视频链接 → 知识笔记」的完整流水线。输入 `$ARGUMENTS` 是视频链接，
 或一整段包含链接的分享文案。如果 `$ARGUMENTS` 为空，向用户索要链接后再继续。
 
-## 前置检查（缺一则停下告知用户怎么装）
+## 前置检查与版本选择（首次必做）
 
-1. `yt-dlp --version`、`ffmpeg -version` 可执行
-2. 环境变量 `WHISPER_CPP_BIN`（whisper-cli 路径）、`WHISPER_CPP_MODEL`（ggml 模型）已配置
-3. 若存在 `~/.workbuddy/skills/video-downloader-enhanced/scripts/download_video.py`
-   则走完整流程；否则按下方「手动替代流程」执行
+1. `yt-dlp --version` 可执行？（轻量版/完全版都需要）
+2. `ffmpeg -version` 可执行，且环境变量 `WHISPER_CPP_BIN`（whisper-cli 路径）、
+   `WHISPER_CPP_MODEL`（ggml 模型）已配置？（仅完全版需要）
+3. **首次使用时必须向用户说明两版区别并让其选择**（本会话内沿用，不必每次重问）：
+   - 轻量版：仅 yt-dlp，用平台字幕转写（B站/YouTube 可用；抖音/小红书/X 无字幕，不可用）
+   - 完全版：+ ffmpeg + whisper.cpp 本地 ASR，全平台可用
+   - 全依赖齐 → 问用户选哪个，未表态默认完全版；只有 yt-dlp → 告知只能跑轻量版
+     并问是否先装完全版；链接属无字幕平台且选轻量版 → 说明后建议升级，不要硬跑
+4. 若存在 `~/.workbuddy/skills/video-downloader-enhanced/scripts/download_video.py`
+   且选了完全版则走完整流程；否则按下方「手动替代流程」执行
+5. 轻量版的字幕抓取与清洗流程见本仓库 `references/light-mode.md`
 
 ## 流程
 

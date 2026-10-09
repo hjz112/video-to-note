@@ -3,8 +3,23 @@
 把一条视频链接变成一份可归档的知识笔记 —— 为 AI Agent 设计的 Skill，兼容 **WorkBuddy / Claude Code / Codex CLI**。
 
 ```
-规范化链接 → 下载并转写 (yt-dlp + whisper.cpp) → 汇总产物 → 生成 summary.md
+规范化链接 → 下载/抓字幕并转写 → 汇总产物 → 生成 summary.md
 ```
+
+## 两个版本：轻量版 vs 完全版
+
+本 skill 内置两种模式。**安装后首次使用时，Agent 会主动展示下表并询问你选哪个**（选择在会话内沿用）：
+
+| | 轻量版 | 完全版 |
+|---|---|---|
+| 依赖 | 仅 yt-dlp | yt-dlp + ffmpeg + whisper.cpp + 本地模型（574MB 起） |
+| 转写来源 | 平台自带字幕（CC / 自动字幕） | 本地 whisper.cpp ASR，逐句转写 |
+| B站 / YouTube | ✅ | ✅ |
+| 抖音 / 小红书 / X | ❌ 平台无字幕，无法转写 | ✅ 全平台 |
+| 安装成本 | 几分钟，无模型下载 | 需安装 whisper.cpp + 下载模型 |
+| 适用建议 | 快速出稿、无 GPU、隐私敏感度低 | 播客/长视频/无字幕平台/高质量归档 |
+
+选定后 Agent 按对应流程执行：轻量版见 [references/light-mode.md](references/light-mode.md)，完全版见 SKILL.md Step 2。
 
 ## 它解决什么问题
 
@@ -23,6 +38,7 @@ video-to-note/
 ├── SKILL.md                  # Skill 主文档：四步流程（符合 Agent Skills 规范）
 ├── references/
 │   ├── note-spec.md          # 笔记格式规范（与下载流程解耦，方便个人化调整）
+│   ├── light-mode.md         # 轻量版流程：平台字幕抓取 + 清洗 + 升级提示话术
 │   └── long-video.md         # 长视频/多视频扩展流程 + 8 条踩坑经验（按需加载）
 ├── scripts/
 │   ├── resolve.py            # 链接规范化：分享文案抽链接 / 短链展开 / modal_id 提取
@@ -52,19 +68,19 @@ npx skills add hjz112/video-to-note
 
 ## 安装教程
 
-### 第 0 步：装依赖（所有平台通用）
+### 第 0 步：装依赖（轻量版只需 yt-dlp，完全版三样全装）
 
 ```bash
-# yt-dlp（三选一）
+# yt-dlp（轻量版/完全版都需要；三选一）
 pip install -U yt-dlp          # pip
 winget install yt-dlp          # Windows winget
 brew install yt-dlp            # macOS
 
-# ffmpeg（转写前抽音轨必需）
+# ffmpeg（仅完全版：转写前抽音轨必需）
 winget install ffmpeg          # Windows
 brew install ffmpeg            # macOS
 
-# whisper.cpp（ASR 引擎）
+# whisper.cpp（仅完全版：ASR 引擎）
 # 参考 https://github.com/ggml-org/whisper.cpp 编译或下载发行版，
 # 然后设置两个环境变量：
 export WHISPER_CPP_BIN="/path/to/whisper-cli"
@@ -74,7 +90,14 @@ export WHISPER_CPP_MODEL="/path/to/ggml-large-v3-turbo-q5_0.bin"
 # setx WHISPER_CPP_MODEL "C:\whisper.cpp\models\ggml-large-v3-turbo-q5_0.bin"
 ```
 
-> 模型推荐 `large-v3-turbo`（约 574MB，速度/质量平衡最好，中文效果好）。
+> **模型按部署场景选档**（同为 whisper large-v3 家族，区别在参数完整度与量化精度）：
+>
+> | 场景 | 模型 | 大小 | 说明 |
+> |---|---|---|---|
+> | 桌面 / 笔记本（默认） | `ggml-large-v3-turbo-q5_0.bin` | ~574MB | 速度/质量平衡最好，中文效果好 |
+> | 服务器 / 批处理 | `ggml-large-v3.bin` | ~3.1GB | 全量 1550M 参数 f16 无损，精度天花板，需 ~3.3GB 显存 |
+> | 省显存的服务器 | `ggml-large-v3-q5_0.bin` | ~1.1GB | 全参数 5bit 量化 |
+>
 > 下载（三选一，按连通性）：
 >
 > ```bash
@@ -86,7 +109,7 @@ export WHISPER_CPP_MODEL="/path/to/ggml-large-v3-turbo-q5_0.bin"
 > #    或用 CLI：set HF_ENDPOINT=https://hf-mirror.com 后 huggingface-cli download
 >
 > # 3) ModelScope（魔搭，国内直连快）：到 modelscope.cn 搜索 "whisper.cpp ggml"，
-> #    选含 ggml-large-v3-turbo-q5_0.bin 的仓库下载同款文件
+> #    选含目标模型文件的仓库下载同款文件
 > ```
 
 **前置校验**（三条都通过即可用）：
