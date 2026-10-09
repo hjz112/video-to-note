@@ -75,7 +75,19 @@ export WHISPER_CPP_MODEL="/path/to/ggml-large-v3-turbo-q5_0.bin"
 ```
 
 > 模型推荐 `large-v3-turbo`（约 574MB，速度/质量平衡最好，中文效果好）。
-> 下载：https://huggingface.co/ggml-org/whisper.cpp 下的 `ggml-large-v3-turbo-q5_0.bin`
+> 下载（三选一，按连通性）：
+>
+> ```bash
+> # 1) HuggingFace 直连
+> #    https://huggingface.co/ggml-org/whisper.cpp/resolve/main/ggml-large-v3-turbo-q5_0.bin
+>
+> # 2) HF 国内镜像（HF 限速/连不上时）：把域名换成 hf-mirror.com 即可
+> #    https://hf-mirror.com/ggml-org/whisper.cpp/resolve/main/ggml-large-v3-turbo-q5_0.bin
+> #    或用 CLI：set HF_ENDPOINT=https://hf-mirror.com 后 huggingface-cli download
+>
+> # 3) ModelScope（魔搭，国内直连快）：到 modelscope.cn 搜索 "whisper.cpp ggml"，
+> #    选含 ggml-large-v3-turbo-q5_0.bin 的仓库下载同款文件
+> ```
 
 **前置校验**（三条都通过即可用）：
 

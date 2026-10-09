@@ -33,7 +33,9 @@ metadata:
 | whisper.cpp 已装且环境变量已配 | `WHISPER_CPP_BIN`、`WHISPER_CPP_MODEL` 有值 |
 
 环境变量缺失时，让 `WHISPER_CPP_BIN` 指向 `whisper-cli`，
-`WHISPER_CPP_MODEL` 指向一个 ggml 模型文件（如 `ggml-large-v3-turbo-q5_0.bin`）。
+`WHISPER_CPP_MODEL` 指向一个 ggml 模型文件（如 `ggml-large-v3-turbo-q5_0.bin`，约 574MB）。
+模型下载优先级：HuggingFace → HF 镜像（域名换 `hf-mirror.com`）→ ModelScope
+（modelscope.cn 搜 "whisper.cpp ggml"）；国内环境 HuggingFace 限速/连不上属常态。
 推荐把这两个环境变量持久化，新开终端即生效；当前 shell 里没有时，
 在命令前显式 `export` 再跑。
 
