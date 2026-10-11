@@ -1,12 +1,12 @@
 ---
 name: video-to-note
-description: 把抖音、B站、YouTube、小红书的视频链接转成结构化的知识库笔记。分轻量版（仅 yt-dlp，用平台字幕转写，适合 B站/YouTube）和完全版（需 ffmpeg + whisper.cpp 本地 ASR，全平台可用）。当用户提供视频链接并要求解析、总结、整理笔记、提取文案、转写内容或归档素材时使用。首次使用必须先执行 Step 0，向用户说明两版区别并确认选择。
+description: 把抖音、B站、YouTube、小红书的视频链接转成结构化的知识库笔记。分轻量版（仅 yt-dlp，用平台字幕转写，适合 B站/YouTube）和完全版（需 ffmpeg + whisper.cpp 本地 ASR，全平台可用）。当用户提供视频链接并要求解析、总结、整理笔记、提取文案、转写内容或归档素材时使用；只要视频文件不要笔记、或要批量下载博主主页全部作品时不要用本 skill（直接用 video-downloader-enhanced）。首次使用必须先执行 Step 0，向用户说明两版区别并确认选择。
 license: MIT
 agent_created: true
 compatibility: Light mode needs yt-dlp only (platform subtitles). Full mode additionally needs ffmpeg, whisper.cpp (WHISPER_CPP_BIN / WHISPER_CPP_MODEL env vars) and Python 3.10+. Best with a video-downloader-enhanced skill present.
 metadata:
   author: hjz112
-  version: "1.2.0"
+  version: "1.3.0"
   repository: https://github.com/hjz112/video-to-note
 ---
 
@@ -21,6 +21,16 @@ metadata:
 本 skill 分**轻量版**和**完全版**两种模式（见 Step 0）；负责编排流程，
 下载和转写交给 `video-downloader-enhanced`，笔记格式由 `references/note-spec.md`
 定义。职责分离的理由：下载流程稳定、不该常改；笔记格式高度个人化、会频繁调整。
+
+## 适用边界（何时触发 / 何时不触发）
+
+**触发**：用户给视频链接，并要求总结、做笔记、提取文案、转写、归档素材。
+
+**不触发**，遇到时直接转给 `video-downloader-enhanced`，不要硬套本流程：
+
+- 只要视频文件本身，不需要笔记或总结
+- 批量下载某博主主页的全部作品（纯主页链接无 `modal_id` 同理，见 Step 1）
+- 输入是音频、图片等非视频内容
 
 ## Step 0 — 版本选择（首次使用必做）
 
@@ -76,6 +86,17 @@ echo "BIN=$WHISPER_CPP_BIN"; echo "MODEL=$WHISPER_CPP_MODEL"
 在命令前显式 `export` 再跑。
 
 轻量版只需 `yt-dlp` 在 PATH。
+
+缺 `video-downloader-enhanced` skill 时的降级路径：轻量版不受影响（B站/YouTube
+仍可用）；完全版优先引导用户安装该 skill（SkillHub 搜 `video-downloader-enhanced`）。
+急用时可用下面的最小跑法替代 Step 2（产物缺 metadata 等字段，Step 3 的
+collect.py 有容错，可直接跑）：
+
+```bash
+yt-dlp -x --audio-format wav -o "<目标目录>/audio.%(ext)s" "<video_url>"
+"$WHISPER_CPP_BIN" -m "$WHISPER_CPP_MODEL" -l <语言> \
+    -f "<目标目录>/audio.wav" -otxt -of "<目标目录>/transcript"
+```
 
 ## Step 1 — 规范化链接（两版通用）
 
@@ -172,6 +193,20 @@ python scripts/collect.py "<产物目录>" --transcript-chars 6000
 分块 + 并行子代理消化、以及 8 条实测踩坑经验（whisper 复读幻觉、B站字幕判据、
 水印音轨识别、HLS 分片丢失补齐等）。
 
+## 故障排查（先重试，再对表）
+
+下载 / 转写遇到网络波动或偶发失败：**先原样重试一次**，仍失败再按下表排查。
+向用户报错时，把表中「原因」一列的话术如实转述，不要只丢一句「失败了」。
+
+| 症状 | 原因 | 处理 |
+|---|---|---|
+| resolve.py 返回 `ok: false` | 链接不是单视频（主页链接 / 已删除 / 非视频） | 按 `note` 字段转述给用户，勿猜 URL |
+| yt-dlp 报 403（抖音） | 绕风控插件或浏览器会话失效 | 按 Step 2 要点处理，勿改用 cookie 硬试 |
+| B站字幕抓下来为空 | 未登录或该视频确实无字幕 | 按 long-video.md 的字幕可用性判据确认 |
+| whisper 输出复读 / 大段乱码 | ASR 幻觉或音轨异常 | 见 long-video.md 踩坑清单（复读幻觉、水印音轨） |
+| download_video.py 的 stdout 不是纯 JSON | 前面混入 yt-dlp WARNING 行 | 产物一律走 Step 3 的 collect.py 读目录，勿 json.loads |
+| 转写为空但视频正常 | 音轨无有效人声（纯音乐等） | 如实告知用户，不要编造内容 |
+
 ## 收尾
 
 - 大文件默认保留，主动询问是否删除，不擅自清理。
@@ -184,5 +219,12 @@ python scripts/collect.py "<产物目录>" --transcript-chars 6000
 | 抖音 | 可用（需自备绕风控的 yt-dlp 插件/方案） | ❌ 无字幕，无法转写 |
 | B站 | 可用 | ✅（字幕需登录态，判据见 long-video.md） |
 | YouTube | 可用（可能需代理） | ✅ |
-| 小红书 | 已实现但未实测 | ❌ 无字幕 |
+| 小红书 | 已实现但未实测（用法见下方说明） | ❌ 无字幕 |
 | 微信视频号 | 不支持。可先用小程序「kg百宝箱」下载，再走本地转写 | ❌ |
+
+边界补充说明：
+
+- **YouTube 需代理**：不是平台不可用。给 yt-dlp 加 `--proxy <代理地址>` 或设置
+  `HTTPS_PROXY` 环境变量后重试即可。
+- **小红书（完全版）未实测**：首次使用先 `--metadata-only` 试跑验证可行性；
+  成功再跑完整流程，失败则如实告知用户「该平台当前不可用」，不要反复重试硬刚。
